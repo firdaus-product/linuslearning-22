@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ms-MY">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Kemahiran Pemulihan: Masa dan Waktu (Intermediate)</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { box-sizing: border-box; }
+    .activity-card { min-height: 400px; }
+    .number-card { transition: all .3s ease; cursor: pointer; }
+    .number-card:hover { transform: scale(1.05); }
+    .dragging { opacity: .5; transform: rotate(5deg); }
+
+    /* Drop zone */
+    .drop-zone {
+      border-width: 2px; 
+      transition: all .3s ease;
+      min-width: 60px;
+      min-height: 60px;
+    }
+    .drop-zone.drag-over { border-color: #3b82f6; background-color: #eff6ff; }
+
+    /* Salah */
+    @keyframes shake {
+      0% { transform: translateX(0); }
+      25% { transform: translateX(-5px); }
+      50% { transform: translateX(5px); }
+      75% { transform: translateX(-5px); }
+      100% { transform: translateX(0); }
+    }
+    .shake { animation: shake 0.5s ease; }
+
+    /* Zon sudah diisi */
+    .drop-zone-filled {
+      border-style: solid;
+      border-color: #4ade80;
+      background-color: #f0fdf4;
+    }
+
+    /* --- GAYA AKTIVITI BARU (INTERMEDIATE) --- */
+
+    /* Aktiviti 1: Cerita Seharian */
+    #story-timeline { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+    #story-timeline .drop-zone { min-height: 100px; min-width: 80px; border-style: dashed; border-color: #cbd5e1; } 
+
+    /* Aktiviti 2: Jarum Jam */
+    #clock-face {
+      width: 200px; height: 200px;
+      border-radius: 50%; border: 8px solid #6b7280;
+      background: #f9fafb; position: relative;
+      margin: 1rem auto;
+      box-shadow: 0 0 0 4px #e5e7eb, inset 0 0 10px rgba(0,0,0,0.1);
+    }
+    .clock-number {
+      position: absolute; width: 30px; height: 30px;
+      line-height: 30px; text-align: center;
+      font-weight: 600; color: #374151; font-size: 1.1rem;
+      transform: translate(-50%, -50%);
+    }
+    .n1 { top: 17%; left: 75%; } .n2 { top: 25%; left: 88%; }
+    .n3 { top: 50%; left: 90%; font-weight: 700; }
+    .n4 { top: 75%; left: 88%; } .n5 { top: 83%; left: 75%; }
+    .n6 { top: 90%; left: 50%; font-weight: 700; }
+    .n7 { top: 83%; left: 25%; } .n8 { top: 75%; left: 12%; }
+    .n9 { top: 50%; left: 10%; font-weight: 700; }
+    .n10 { top: 25%; left: 12%; } .n11 { top: 17%; left: 25%; }
+    .n12 { top: 10%; left: 50%; font-weight: 700; }
+
+    .clock-hand {
+      position: absolute; bottom: 50%; left: 50%;
+      transform-origin: bottom center; transition: transform 0.5s ease;
+    }
+    #hand-hour { width: 8px; height: 60px; background: #374151; margin-left: -4px; z-index: 8; border-radius: 4px; }
+    #hand-minute { width: 4px; height: 90px; background: #374151; margin-left: -2px; z-index: 9; border-radius: 2px; }
+    #clock-center {
+      width: 12px; height: 12px; background: #ef4444;
+      border-radius: 50%; position: absolute;
+      top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;
+    }
+
+    /* Aktiviti 3: Detektif Hari */
+    .day-button {
+      padding: 0.75rem 1rem; border: 2px solid transparent;
+      border-radius: 0.5rem; font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .day-button.selected { background-color: #fef3c7; border-color: #f59e0b; transform: scale(1.1); }
+    .day-button.result { background-color: #dbeafe; border-color: #3b82f6; }
+
+    /* Aktiviti 5: Susun Bulan (Durasi) */
+    .month-card-bank {
+      display: flex; flex-wrap: wrap; justify-content: center; gap: 0.5rem;
+      background: #f9fafb; padding: 1rem; border-radius: 0.5rem;
+    }
+    .month-card {
+      padding: 0.5rem 1rem; font-weight: 600; cursor: move;
+      border-radius: 0.5rem; border-width: 2px;
+    }
+  </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-purple-50 min-h-full">
+
+  <div class="bg-yellow-100 border-b-4 border-yellow-300 p-4 shadow-sm sticky top-0 z-10">
+    <div class="max-w-6xl mx-auto flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <span class="text-2xl">📚</span>
+        <span id="info-text" class="text-lg font-semibold text-gray-800">
+          Pilih aktiviti (Intermediate) untuk mula belajar Masa dan Waktu!
+        </span>
+      </div>
+      <button id="speak-btn"
+              class="bg-yellow-300 hover:bg-yellow-400 text-yellow-800 font-bold py-2 px-4 rounded-full text-xl transition-colors duration-200"
+              onclick="speakInfo()">
+        🔊
+      </button>
+    </div>
+  </div>
+
+  <div class="max-w-6xl mx-auto p-6">
+    <div class="bg-white rounded-xl shadow-lg p-6 mb-6 activity-card flex items-center justify-center">
+      <div id="activity-content" class="text-center w-full">
+        <div class="py-16">
+          <div class="text-6xl mb-4">⏰</div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-4">
+            Kemahiran Pemulihan: Masa dan Waktu (Intermediate)
+          </h2>
+          <p class="text-xl text-gray-600 mb-8">
+            Teroka aktiviti yang lebih mencabar untuk mengukuhkan pemahaman anda.
+          </p>
+          <div class="text-4xl">👇</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="bg-white rounded-xl shadow-lg p-6">
+      <h3 class="text-2xl font-bold text-gray-800 mb-4 text-center">Pilih Aktiviti (Intermediate)</h3>
+      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-6">
+        <button onclick="loadActivity(1)"
+                class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          🌄 Cerita Seharian
+        </button>
+        <button onclick="loadActivity(2)"
+                class="bg-green-500 hover:bg-green-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          ⏱️ Jarum Jam
+        </button>
+        <button onclick="loadActivity(3)"
+                class="bg-purple-500 hover:bg-purple-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          🕵️ Detektif Hari
+        </button>
+        <button onclick="loadActivity(4)"
+                class="bg-orange-500 hover:bg-orange-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          📅 Tulis Tarikh
+        </button>
+        <button onclick="loadActivity(5)"
+                class="bg-red-500 hover:bg-red-600 text-white font-bold py-3 px-4 rounded-lg text-lg transition-colors duration-200">
+          🗓️ Susun Bulan (Warna)
+        </button>
+      </div>
+
+      <div class="flex justify-center gap-4">
+        <button onclick="clearActivity()" class="bg-gray-500 hover:bg-gray-600 text-white font-bold py-2 px-6 rounded-lg text-lg transition-colors duration-200">
+          🧹 Bersih
+        </button>
+        <button onclick="nextActivity()" class="bg-indigo-500 hover:bg-indigo-600 text-white font-bold py-2 px-6 rounded-lg text-lg transition-colors duration-200">
+          ➡️ Seterusnya
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentActivity = 0;
+    let ttsEnabled = false;
+    let currentInfo = "Pilih aktiviti (Intermediate) untuk mula belajar Masa dan Waktu!";
+    let draggedElement = null;
+
+    // State untuk aktiviti
+    window.dayDetective = { currentIndex: -1 };
+    window.dailyStory = { sequence: [], nextCorrect: null };
+
+    /* ====== TTS ====== */
+    function speak(text) {
+      if (!ttsEnabled) return;
+      if (!('speechSynthesis' in window)) return;
+      window.speechSynthesis.cancel();
+      setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ms-MY';
+        u.rate = 0.9; u.pitch = 1.05;
+        const voices = window.speechSynthesis.getVoices();
+        const ms = voices.find(v => v.lang === 'ms-MY' || v.lang?.startsWith('ms'));
+        if (ms) u.voice = ms;
+        window.speechSynthesis.speak(u);
+      }, 100);
+    }
+    function setInfo(text) { currentInfo = text; document.getElementById('info-text').textContent = text; }
+    function speakInfo() {
+      if (!ttsEnabled) {
+        ttsEnabled = true;
+        const btn = document.getElementById('speak-btn');
+        btn.classList.add('bg-green-300', 'hover:bg-green-400');
+        btn.classList.remove('bg-yellow-300', 'hover:bg-yellow-400');
+      }
+      speak(currentInfo);
+    }
+
+    /* ====== DnD helpers ====== */
+    function dragStart(e) { draggedElement = e.target; e.target.classList.add('dragging'); }
+    function dragEnd(e) { e.target.classList.remove('dragging'); document.querySelectorAll('.drop-zone').forEach(z=>z.classList.remove('drag-over')); }
+    function allowDrop(e) { e.preventDefault(); if (e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.add('drag-over'); }
+    function dragLeave(e) { if (e.currentTarget.classList.contains('drop-zone')) e.currentTarget.classList.remove('drag-over'); }
+
+    /* ====== Router ====== */
+    function loadActivity(n) {
+      currentActivity = n;
+      const content = document.getElementById('activity-content');
+      if (n === 1) return loadDailyStoryActivity(content);
+      if (n === 2) return loadClockActivity(content);
+      if (n === 3) return loadDayDetectiveActivity(content);
+      if (n === 4) return loadWriteDateActivity(content);
+      if (n === 5) return loadMonthDurationActivity(content);
+    }
+
+    /* ====== Aktiviti 1: Cerita Seharian (Sequence DnD) ====== */
+    function loadDailyStoryActivity(content) {
+      setInfo("Susun aktiviti ini mengikut urutan yang betul dalam sehari.");
+      const activities = [
+        { icon: "🌅", name: "Bangun Tidur", order: 1 }, { icon: "🏫", name: "Ke Sekolah", order: 2 },
+        { icon: "☀️", name: "Makan Tengahari", order: 3 }, { icon: "🌇", name: "Main Petang", order: 4 },
+        { icon: "📚", name: "Kerja Rumah", order: 5 }, { icon: "😴", name: "Tidur", order: 6 }
+      ];
+      window.dailyStory = { sequence: activities.map(a => a.order), nextCorrect: 1 };
+      const shuffled = [...activities].sort(() => Math.random() - 0.5);
+
+      content.innerHTML = `
+        <h3 class="text-2xl font-bold text-blue-600 mb-6">🌄 Cerita Seharian</h3>
+        <div class="mb-8">
+          <h4 class="text-lg font-semibold mb-3">Bank Aktiviti (Pilih dari sini):</h4>
+          <div id="activity-bank" class="flex flex-wrap justify-center gap-4">
+            ${shuffled.map(act => `
+              <div class="number-card bg-blue-100 border-2 border-blue-300 rounded-lg p-4 text-center cursor-move"
+                   draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-order="${act.order}">
+                <span class="text-4xl">${act.icon}</span>
+                <div class="text-sm font-semibold text-blue-800">${act.name}</div>
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        <div>
+          <h4 class="text-lg font-semibold mb-3">Garis Masa (Letak di sini mengikut urutan):</h4>
+          <div id="story-timeline" class="drop-zone bg-gray-50 p-4 rounded-lg"
+               ondrop="dropOnStoryline(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)">
+          </div>
+        </div>
+      `;
+    }
+
+    function dropOnStoryline(e) {
+      e.preventDefault(); e.currentTarget.classList.remove('drag-over'); if (!draggedElement) return;
+      const draggedOrder = parseInt(draggedElement.dataset.order);
+      const { sequence, nextCorrect } = window.dailyStory;
+      if (draggedOrder === nextCorrect) {
+        e.currentTarget.appendChild(draggedElement);
+        draggedElement.setAttribute('draggable', 'false'); draggedElement.classList.remove('cursor-move', 'dragging');
+        const currentIndex = sequence.indexOf(nextCorrect), nextIndex = currentIndex + 1;
+        if (nextIndex < sequence.length) {
+          const newNext = sequence[nextIndex]; window.dailyStory.nextCorrect = newNext;
+          const msg = `Betul! Apa berlaku selepas itu?`; setInfo(msg); speak(msg);
+        } else {
+          const msg = "Syabas! Cerita anda lengkap dan tersusun!"; setInfo(msg); speak(msg);
+          window.dailyStory.nextCorrect = null;
+        }
+        draggedElement = null;
+      } else {
+        const msg = `Oh! Itu bukan aktiviti yang seterusnya. Cuba lagi.`;
+        setInfo(msg); speak(msg);
+        draggedElement.classList.add('shake'); setTimeout(() => draggedElement.classList.remove('shake'), 500);
+      }
+    }
+
+    /* ====== Aktiviti 2: Jarum Jam (Eksplorasi Analog) ====== */
+    function loadClockActivity(content) {
+      setInfo("Teroka bagaimana jarum jam bergerak. Klik satu waktu untuk melihatnya pada jam.");
+      content.innerHTML = `
+        <h3 class="text-2xl font-bold text-green-600 mb-6">⏱️ Jarum Jam</h3>
+        <div id="clock-face">
+          <div class="clock-number n1">1</div> <div class="clock-number n2">2</div>
+          <div class="clock-number n3">3</div> <div class="clock-number n4">4</div>
+          <div class="clock-number n5">5</div> <div class="clock-number n6">6</div>
+          <div class="clock-number n7">7</div> <div class="clock-number n8">8</div>
+          <div class="clock-number n9">9</div> <div class="clock-number n10">10</div>
+          <div class="clock-number n11">11</div> <div class="clock-number n12">12</div>
+          <div id="hand-hour" class="clock-hand" style="transform: rotate(0deg);"></div>
+          <div id="hand-minute" class="clock-hand" style="transform: rotate(0deg);"></div>
+          <div id="clock-center"></div>
+        </div>
+        <div id="digital-time" class="text-3xl font-bold text-gray-700 mb-4">--:--</div>
+        <div class="flex flex-wrap justify-center gap-3">
+          <button onclick="setClockTime(7, 0, 'Pagi')" class="bg-green-100 hover:bg-green-200 text-green-800 font-bold py-2 px-4 rounded">7:00 Pagi</button>
+          <button onclick="setClockTime(14, 0, 'Petang')" class="bg-green-100 hover:bg-green-200 text-green-800 font-bold py-2 px-4 rounded">2:00 Petang</button>
+          <button onclick="setClockTime(10, 15, 'Pagi')" class="bg-green-100 hover:bg-green-200 text-green-800 font-bold py-2 px-4 rounded">10:15 Pagi</button>
+          <button onclick="setClockTime(17, 45, 'Petang')" class="bg-green-100 hover:bg-green-200 text-green-800 font-bold py-2 px-4 rounded">5:45 Petang</button>
+          <button onclick="setClockTime(21, 30, 'Malam')" class="bg-green-100 hover:bg-green-200 text-green-800 font-bold py-2 px-4 rounded">9:30 Malam</button>
+        </div>
+      `;
+    }
+    function setClockTime(hour24, minute, timeOfDay) {
+      const hour12 = hour24 % 12 || 12;
+      const minuteDeg = minute * 6;
+      const hourDeg = (hour24 % 12 * 30) + (minute * 0.5);
+      document.getElementById('hand-hour').style.transform = `rotate(${hourDeg}deg)`;
+      document.getElementById('hand-minute').style.transform = `rotate(${minuteDeg}deg)`;
+      const minStr = minute.toString().padStart(2, '0');
+      document.getElementById('digital-time').textContent = `${hour12}:${minStr} ${timeOfDay}`;
+      const msg = `Ini pukul ${hour12} ${minStr} ${timeOfDay}. Lihat kedudukan jarum jam.`;
+      setInfo(msg); speak(msg);
+    }
+
+    /* ====== Aktiviti 3: Detektif Hari (Relative Days) ====== */
+    function loadDayDetectiveActivity(content) {
+      setInfo("Pilih satu hari. Kemudian, guna butang untuk kira 'esok', 'lusa', atau 'kelmarin'.");
+      const DAYS = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+      window.dayDetective.currentIndex = -1;
+      content.innerHTML = `
+        <h3 class="text-2xl font-bold text-purple-600 mb-6">🕵️ Detektif Hari</h3>
+        <div class="mb-4">
+          <h4 class="text-lg font-semibold mb-3">1. Pilih Hari Ini:</h4>
+          <div id="day-selector" class="flex flex-wrap justify-center gap-2">
+            ${DAYS.map((day, index) => `
+              <button class="day-button bg-gray-100 text-gray-700"
+                      onclick="selectStartDay(${index}, this)">${day}</button>
+            `).join('')}
+          </div>
+        </div>
+        <div class="my-6">
+          <h4 class="text-lg font-semibold mb-3">2. Kira Hari:</h4>
+          <div class="flex flex-wrap justify-center gap-3">
+            <button onclick="calcDay(-2)" class="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold py-2 px-4 rounded">2 hari lepas (Kelmarin)</button>
+            <button onclick="calcDay(-1)" class="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold py-2 px-4 rounded">1 hari lepas (Semalam)</button>
+            <button onclick="calcDay(1)" class="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold py-2 px-4 rounded">1 hari lagi (Esok)</button>
+            <button onclick="calcDay(2)" class="bg-purple-100 hover:bg-purple-200 text-purple-800 font-bold py-2 px-4 rounded">2 hari lagi (Lusa)</button>
+          </div>
+        </div>
+        <div id="detective-result" class="mt-4 p-4 bg-blue-50 rounded-lg text-lg font-semibold text-blue-800 min-h-16 hidden"></div>
+      `;
+    }
+    function selectStartDay(index, btnElement) {
+      window.dayDetective.currentIndex = index;
+      document.querySelectorAll('#day-selector .day-button').forEach(btn => btn.classList.remove('selected'));
+      btnElement.classList.add('selected');
+      document.getElementById('detective-result').classList.add('hidden');
+      setInfo(`Anda memilih ${btnElement.textContent}. Sekarang, cuba kira hari.`);
+      speak(`Anda memilih ${btnElement.textContent}. Sekarang, cuba kira hari.`);
+    }
+    function calcDay(offset) {
+      const { currentIndex } = window.dayDetective;
+      if (currentIndex === -1) {
+        const msg = "Sila pilih 'Hari Ini' dahulu."; setInfo(msg); speak(msg);
+        document.getElementById('day-selector').classList.add('shake');
+        setTimeout(() => document.getElementById('day-selector').classList.remove('shake'), 500);
+        return;
+      }
+      const DAYS = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+      const newIndex = (currentIndex + offset + 7) % 7;
+      const startDay = DAYS[currentIndex], resultDay = DAYS[newIndex];
+      const resultTextEl = document.getElementById('detective-result');
+      const msg = `Jika hari ini ${startDay}, maka ${Math.abs(offset)} hari ${offset > 0 ? 'lagi' : 'lepas'} ialah ${resultDay}.`;
+      resultTextEl.textContent = msg; resultTextEl.classList.remove('hidden');
+      document.querySelectorAll('#day-selector .day-button').forEach((btn, i) => {
+        btn.classList.remove('result'); if (i === newIndex) btn.classList.add('result');
+      });
+      setInfo(msg); speak(msg);
+    }
+
+    /* ====== Aktiviti 4: Tulis Tarikh (Month Number) ====== */
+    function loadWriteDateActivity(content) {
+      setInfo("Lihat tarikh dalam nombor. Pilih nama bulan yang sepadan.");
+      const MONTHS = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
+      const day = Math.floor(Math.random() * 28) + 1, monthNum = Math.floor(Math.random() * 12) + 1, year = 2025;
+      const correctMonthName = MONTHS[monthNum - 1];
+      content.innerHTML = `
+        <h3 class="text-2xl font-bold text-orange-600 mb-6">📅 Tulis Tarikh</h3>
+        <div class="mb-6 p-6 bg-gray-100 rounded-lg">
+          <div class="text-lg font-semibold text-gray-600">Tarikh dalam angka:</div>
+          <div class="text-5xl font-bold text-gray-800 mb-4">${day} / ${monthNum} / ${year}</div>
+        </div>
+        <div class="mb-4">
+          <div class="text-lg font-semibold text-gray-600">Salin semula tarikh (dalam perkataan):</div>
+          <div class="flex items-center justify-center gap-3 p-4 bg-orange-50 rounded-lg">
+            <span class="text-3xl font-bold text-orange-800">${day}</span>
+            <span id="month-slot" class="text-3xl font-bold text-orange-400 p-2 border-4 border-dashed border-orange-300 rounded-lg min-w-48">
+              [ Pilih Bulan ]
+            </span>
+            <span class="text-3xl font-bold text-orange-800">${year}</span>
+          </div>
+        </div>
+        <div class="flex flex-wrap justify-center gap-2">
+          ${MONTHS.map((month) => `
+            <button class="number-card bg-orange-100 hover:bg-orange-200 border-2 border-orange-300 rounded-lg py-2 px-4 text-md font-bold text-orange-800"
+                    onclick="selectMonthName('${month}', '${correctMonthName}')">${month}</button>
+          `).join('')}
+        </div>
+      `;
+    }
+    function selectMonthName(selectedMonth, correctMonth) {
+      const slot = document.getElementById('month-slot');
+      slot.textContent = selectedMonth;
+      if (selectedMonth === correctMonth) {
+        slot.classList.remove('border-dashed', 'border-orange-300', 'text-orange-400');
+        slot.classList.add('border-solid', 'border-green-500', 'bg-green-100', 'text-green-800');
+        const msg = `Betul! Bulan ${correctMonth} ialah bulan ke-${MONTHS.indexOf(correctMonth) + 1}.`;
+        setInfo(msg); speak(msg);
+      } else {
+        slot.classList.add('text-red-500', 'shake');
+        setTimeout(() => {
+          slot.classList.remove('shake', 'text-red-500');
+          if (slot.textContent === selectedMonth) {
+            slot.textContent = "[ Pilih Bulan ]"; slot.classList.add('text-orange-400');
+          }
+        }, 800);
+        const msg = "Bukan. Cuba cari bulan yang sepadan dengan nombor tadi.";
+        setInfo(msg); speak(msg);
+      }
+    }
+
+    /* ====== Aktiviti 5: Susun Bulan (Bilangan Hari/Warna) ====== */
+    function loadMonthDurationActivity(content) {
+      setInfo("Padankan warna bulan dengan kumpulan hari yang betul.");
+      
+      // === DIKEMAS KINI: .sort() telah dibuang ===
+      const MONTHS = [
+        { name: "Januari", days: 31, color: 'red' }, { name: "Februari", days: "other", color: 'indigo' },
+        { name: "Mac", days: 31, color: 'red' }, { name: "April", days: 30, color: 'orange' },
+        { name: "Mei", days: 31, color: 'red' }, { name: "Jun", days: 30, color: 'orange' },
+        { name: "Julai", days: 31, color: 'red' }, { name: "Ogos", days: 31, color: 'red' },
+        { name: "September", days: 30, color: 'orange' }, { name: "Oktober", days: 31, color: 'red' },
+        { name: "November", days: 30, color: 'orange' }, { name: "Disember", days: 31, color: 'red' }
+      ]; // <--- .sort() dibuang dari sini
+
+      content.innerHTML = `
+        <h3 class="text-2xl font-bold text-red-600 mb-6">🗓️ Susun Bulan (Padanan Warna)</h3>
+        <div class="mb-6">
+          <h4 class="text-lg font-semibold mb-3">Bank Bulan (Pilih dari sini):</h4>
+          <div class="month-card-bank">
+            ${MONTHS.map(m => `
+              <div class="month-card bg-${m.color}-100 border-${m.color}-300 text-${m.color}-800" 
+                   draggable="true" ondragstart="dragStart(event)" ondragend="dragEnd(event)" data-days="${m.days}">
+                ${m.name}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+        
+        <div>
+          <h4 class="text-lg font-semibold mb-3">Kumpulan Hari (Letak di sini):</h4>
+          <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div class="drop-zone rounded-lg p-4 bg-red-50 border-red-300 border-dashed" 
+                 ondrop="dropOnDuration(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" data-correct="31">
+              <h5 class="text-center font-bold text-red-700 mb-2">31 HARI</h5>
+            </div>
+            <div class="drop-zone rounded-lg p-4 bg-orange-50 border-orange-300 border-dashed" 
+                 ondrop="dropOnDuration(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" data-correct="30">
+              <h5 class="text-center font-bold text-orange-700 mb-2">30 HARI</h5>
+            </div>
+            <div class="drop-zone rounded-lg p-4 bg-indigo-50 border-indigo-300 border-dashed" 
+                 ondrop="dropOnDuration(event)" ondragover="allowDrop(event)" ondragleave="dragLeave(event)" data-correct="other">
+              <h5 class="text-center font-bold text-indigo-700 mb-2">LAIN-LAIN (28/29 Hari)</h5>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function dropOnDuration(e) {
+      e.preventDefault(); e.currentTarget.classList.remove('drag-over'); if (!draggedElement) return;
+      const draggedDays = draggedElement.dataset.days;
+      const correctDays = e.currentTarget.dataset.correct;
+      const monthName = draggedElement.textContent.trim();
+
+      if (draggedDays === correctDays) {
+        e.currentTarget.appendChild(draggedElement);
+        draggedElement.setAttribute('draggable', 'false'); draggedElement.classList.remove('cursor-move', 'dragging');
+        const msg = `Betul! ${monthName} diletakkan.`; setInfo(msg); speak(msg);
+        if (document.querySelector('.month-card-bank').children.length === 0) {
+          setInfo("Syabas! Semua bulan telah disusun!"); speak("Syabas! Semua bulan telah disusun!");
+        }
+        draggedElement = null;
+      } else {
+        const msg = `Bukan. ${monthName} tidak sepadan dengan kumpulan ini. Cuba lagi.`;
+        setInfo(msg); speak(msg);
+        draggedElement.classList.add('shake'); setTimeout(() => draggedElement.classList.remove('shake'), 500);
+      }
+    }
+
+
+    /* ====== Kawalan Umum ====== */
+    function clearActivity() {
+      currentActivity = 0;
+      document.getElementById('activity-content').innerHTML = `
+        <div class="text-center py-16">
+          <div class="text-6xl mb-4">⏰</div>
+          <h2 class="text-3xl font-bold text-gray-800 mb-4">Kemahiran Pemulihan: Masa dan Waktu (Intermediate)</h2>
+          <p class="text-xl text-gray-600 mb-8">Teroka aktiviti yang lebih mencabar untuk mengukuhkan pemahaman anda.</p>
+          <div class="text-4xl">👇</div>
+        </div>
+      `;
+      setInfo("Pilih aktiviti (Intermediate) untuk mula belajar Masa dan Waktu!");
+    }
+
+    function nextActivity() {
+      if (currentActivity === 0) return loadActivity(1);
+      if (currentActivity < 5) return loadActivity(currentActivity + 1);
+      return loadActivity(1);
+    }
+
+    // Kekalkan TTS resume pada sesetengah pelayar
+    if ('speechSynthesis' in window) {
+      setInterval(() => { if (window.speechSynthesis.paused) window.speechSynthesis.resume(); }, 1000);
+    }
+  </script>
+</body>
+</html>
