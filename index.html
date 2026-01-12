@@ -1,417 +1,578 @@
 <!DOCTYPE html>
-<html lang="ms-MY">
+<html lang="ms-MY" class="overflow-hidden overscroll-none">
+
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Masa dan Waktu (Intermediate)</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>Masa dan Waktu (Intermediate)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
-  <style>
-    /* --- UI STYLE (MASTER REFERENCE - TEMA HIJAU) --- */
-    body { 
-        font-family: 'Fredoka', sans-serif; 
-        background-color: #f0fdf4; 
-        background-image: radial-gradient(#86efac 2px, transparent 2px); 
-        background-size: 30px 30px; 
-    }
-    
-    .game-card { 
-        background: white; 
-        border: 4px solid #475569; 
-        box-shadow: 8px 8px 0px #00000020; 
-        border-radius: 1.5rem; 
-        min-height: 600px; 
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        flex-direction: column;
-        overflow: hidden; 
-    }
-    
-    /* Buttons */
-    .btn-3d { 
-        transition: all 0.1s; 
-        border-bottom-width: 6px; 
-        border-color: rgba(0,0,0,0.2); 
-        transform: translateY(0); 
-        cursor: pointer; 
-        display: inline-block; 
-    }
-    .btn-3d:active:not(:disabled) { transform: translateY(4px); border-bottom-width: 2px; box-shadow: none; }
-    .btn-3d:disabled { opacity: 0.6; cursor: not-allowed; border-bottom-width: 6px; filter: grayscale(100%); }
+    <style>
+        /* --- UI STYLE (MASTER REFERENCE - TEMA HIJAU) --- */
+        body {
+            font-family: 'Fredoka', sans-serif;
+            background-color: #f0fdf4;
+            background-image: radial-gradient(#86efac 2px, transparent 2px);
+            background-size: 30px 30px;
+        }
 
-    /* Animations */
-    .pop-in { animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-    @keyframes popIn { 0% { transform: scale(0); } 100% { transform: scale(1); } }
-    .shake { animation: shake 0.4s ease-in-out; }
-    @keyframes shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-5px); } 75% { transform: translateX(5px); } }
+        .game-card {
+            background: white;
+            border: 4px solid #475569;
+            box-shadow: 8px 8px 0px #00000020;
+            border-radius: 1.5rem;
+            /* min-height: 600px; REMOVED */
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            overflow: hidden;
+        }
 
-    /* Activity Specific Styles */
-    #scene-container {
-        background-size: cover; background-position: center;
-        border: 4px solid #475569; border-radius: 1.5rem;
-        transition: background-image 0.5s ease;
-        cursor: zoom-in;
-        position: relative;
-    }
-    
-    /* Clock Face */
-    #clock-face {
-        width: 220px; height: 220px; border-radius: 50%; 
-        border: 8px solid #4b5563; background: white; 
-        position: relative; margin: 0 auto;
-        box-shadow: inset 0 0 20px rgba(0,0,0,0.1);
-    }
-    .clock-number {
-        position: absolute; width: 30px; height: 30px; text-align: center; line-height: 30px;
-        font-weight: bold; color: #374151; transform: translate(-50%, -50%);
-    }
-    /* Number Positioning */
-    .n12 { top: 10%; left: 50%; } .n3 { top: 50%; left: 90%; }
-    .n6 { top: 90%; left: 50%; } .n9 { top: 50%; left: 10%; }
-    /* Other numbers simplified for brevity */
-    .n1 { top: 17%; left: 73%; } .n2 { top: 30%; left: 87%; }
-    .n4 { top: 70%; left: 87%; } .n5 { top: 83%; left: 73%; }
-    .n7 { top: 83%; left: 27%; } .n8 { top: 70%; left: 13%; }
-    .n10 { top: 30%; left: 13%; } .n11 { top: 17%; left: 27%; }
+        /* Buttons */
+        .btn-3d {
+            transition: all 0.1s;
+            border-bottom-width: 6px;
+            border-color: rgba(0, 0, 0, 0.2);
+            transform: translateY(0);
+            cursor: pointer;
+            display: inline-block;
+        }
 
-    .clock-hand {
-        position: absolute; bottom: 50%; left: 50%; transform-origin: bottom center;
-        background: #1f2937; border-radius: 4px; transition: transform 0.5s cubic-bezier(0.4, 2.08, 0.55, 0.44);
-    }
-    #hand-hour { width: 6px; height: 50px; margin-left: -3px; z-index: 5; }
-    #hand-minute { width: 4px; height: 80px; margin-left: -2px; z-index: 6; background: #4b5563; }
-    #clock-center {
-        width: 12px; height: 12px; background: #ef4444; border-radius: 50%;
-        position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 10;
-    }
+        .btn-3d:active:not(:disabled) {
+            transform: translateY(4px);
+            border-bottom-width: 2px;
+            box-shadow: none;
+        }
 
-    /* Drop Zones */
-    .drop-zone { border: 3px dashed #cbd5e1; background-color: #f8fafc; transition: all 0.2s; }
-    .drop-zone.drag-over { background-color: #dbeafe; border-color: #3b82f6; transform: scale(1.02); }
-    
-    /* Highlight */
-    .highlight { background-color: #fcd34d !important; transform: scale(1.05); border-color: #f59e0b !important; font-weight: 800; }
-  </style>
+        .btn-3d:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            border-bottom-width: 6px;
+            filter: grayscale(100%);
+        }
+
+        /* Animations */
+        .pop-in {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% {
+                transform: scale(0);
+            }
+
+            100% {
+                transform: scale(1);
+            }
+        }
+
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        @keyframes shake {
+
+            0%,
+            100% {
+                transform: translateX(0);
+            }
+
+            25% {
+                transform: translateX(-5px);
+            }
+
+            75% {
+                transform: translateX(5px);
+            }
+        }
+
+        /* Activity Specific Styles */
+        #scene-container {
+            background-size: cover;
+            background-position: center;
+            border: 4px solid #475569;
+            border-radius: 1.5rem;
+            transition: background-image 0.5s ease;
+            cursor: zoom-in;
+            position: relative;
+        }
+
+        /* Clock Face */
+        #clock-face {
+            width: 180px;
+            height: 180px;
+            border-radius: 50%;
+            border: 6px solid #4b5563;
+            background: white;
+            position: relative;
+            margin: 0 auto;
+            box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.1);
+        }
+
+        .clock-number {
+            position: absolute;
+            width: 24px;
+            height: 24px;
+            text-align: center;
+            line-height: 24px;
+            font-weight: bold;
+            color: #374151;
+            transform: translate(-50%, -50%);
+            font-size: 0.9rem;
+        }
+
+        /* Number Positioning */
+        .n12 {
+            top: 10%;
+            left: 50%;
+        }
+
+        .n3 {
+            top: 50%;
+            left: 90%;
+        }
+
+        .n6 {
+            top: 90%;
+            left: 50%;
+        }
+
+        .n9 {
+            top: 50%;
+            left: 10%;
+        }
+
+        /* Other numbers simplified for brevity */
+        .n1 {
+            top: 17%;
+            left: 73%;
+        }
+
+        .n2 {
+            top: 30%;
+            left: 87%;
+        }
+
+        .n4 {
+            top: 70%;
+            left: 87%;
+        }
+
+        .n5 {
+            top: 83%;
+            left: 73%;
+        }
+
+        .n7 {
+            top: 83%;
+            left: 27%;
+        }
+
+        .n8 {
+            top: 70%;
+            left: 13%;
+        }
+
+        .n10 {
+            top: 30%;
+            left: 13%;
+        }
+
+        .n11 {
+            top: 17%;
+            left: 27%;
+        }
+
+        .clock-hand {
+            position: absolute;
+            bottom: 50%;
+            left: 50%;
+            transform-origin: bottom center;
+            background: #1f2937;
+            border-radius: 4px;
+            transition: transform 0.5s cubic-bezier(0.4, 2.08, 0.55, 0.44);
+        }
+
+        #hand-hour {
+            width: 5px;
+            height: 40px;
+            margin-left: -2.5px;
+            z-index: 5;
+        }
+
+        #hand-minute {
+            width: 3px;
+            height: 60px;
+            margin-left: -1.5px;
+            z-index: 6;
+            background: #4b5563;
+        }
+
+        #clock-center {
+            width: 10px;
+            height: 10px;
+            background: #ef4444;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 10;
+        }
+
+        /* Drop Zones */
+        .drop-zone {
+            border: 3px dashed #cbd5e1;
+            background-color: #f8fafc;
+            transition: all 0.2s;
+        }
+
+        .drop-zone.drag-over {
+            background-color: #dbeafe;
+            border-color: #3b82f6;
+            transform: scale(1.02);
+        }
+
+        /* Highlight */
+        .highlight {
+            background-color: #fcd34d !important;
+            transform: scale(1.05);
+            border-color: #f59e0b !important;
+            font-weight: 800;
+        }
+    </style>
 </head>
-<body class="min-h-screen text-slate-800 pb-10">
 
-  <div id="image-modal" class="fixed inset-0 bg-black/80 hidden z-50 flex items-center justify-center p-4" onclick="closeModal()">
-    <div class="bg-white p-4 rounded-3xl relative max-w-4xl w-full max-h-[90vh] flex flex-col items-center animate-popIn" onclick="event.stopPropagation()">
-      <button onclick="closeModal()" class="absolute top-4 right-4 bg-red-500 text-white w-10 h-10 rounded-full font-bold text-xl border-2 border-white shadow-lg hover:bg-red-600 transition">✕</button>
-      <img id="modal-img" src="" class="w-full h-auto max-h-[80vh] object-contain rounded-xl shadow-md">
+<body class="h-screen w-screen overflow-hidden text-slate-800 flex flex-col overscroll-none">
+
+    <div class="flex-none p-4 z-50 pointer-events-none w-full">
+        <div
+            class="max-w-4xl mx-auto bg-green-400 border-4 border-green-600 rounded-full px-4 py-2 shadow-xl flex items-center justify-between pointer-events-auto transform hover:scale-[1.01] transition-transform">
+            <div class="flex items-center gap-3">
+                <span class="text-2xl animate-bounce">⏰</span>
+                <span id="info-text" class="text-lg font-bold text-green-900 leading-none mt-1">Masa & Waktu
+                    (Int.)</span>
+            </div>
+            <button id="speak-btn" onclick="speakInfo()"
+                class="bg-white hover:bg-green-50 text-green-600 border-2 border-green-200 rounded-full p-2 transition-colors shadow-sm">🔊</button>
+        </div>
     </div>
-  </div>
 
-  <div class="fixed top-4 left-0 right-0 z-50 px-4 pointer-events-none">
-    <div class="max-w-4xl mx-auto bg-green-400 border-4 border-green-600 rounded-full px-6 py-3 shadow-xl flex items-center justify-between pointer-events-auto transform hover:scale-[1.01] transition-transform">
-      <div class="flex items-center gap-3">
-        <span class="text-3xl animate-bounce">⏰</span>
-        <span id="info-text" class="text-xl font-bold text-green-900 leading-none mt-1">Masa & Waktu (Int.)</span>
-      </div>
-      <button id="speak-btn" onclick="speakInfo()" class="bg-white hover:bg-green-50 text-green-600 border-2 border-green-200 rounded-full p-2 transition-colors shadow-sm">🔊</button>
-    </div>
-  </div>
-  <div class="h-24"></div>
+    <div class="flex-1 w-full max-w-6xl mx-auto p-2 flex flex-col min-h-0">
 
-  <div class="max-w-6xl mx-auto p-4">
-    
-    <div class="game-card p-8 mb-8">
-        <div id="activity-content" class="w-full relative z-10 flex flex-col items-center justify-center h-full transition-opacity duration-200">
-            <div class="py-10 text-center">
-                <div class="text-8xl mb-6 animate-pulse">⌛</div>
-                <h2 class="text-5xl font-bold text-emerald-600 mb-4">Masa & Waktu</h2>
-                <p class="text-2xl text-slate-500 mb-8 font-semibold">Peringkat Pertengahan: Cerita, Jam & Kalendar.</p>
-                <div class="text-4xl animate-bounce">👇</div>
+        <div class="game-card p-4 mb-2 flex-1 w-full">
+            <div id="activity-content"
+                class="w-full relative z-10 flex flex-col items-center justify-center h-full transition-opacity duration-200">
+                <div class="py-10 text-center">
+                    <div class="text-8xl mb-6 animate-pulse">⌛</div>
+                    <h2 class="text-5xl font-bold text-emerald-600 mb-4">Masa & Waktu</h2>
+                    <p class="text-lg text-slate-500 mb-8 font-semibold">Peringkat Pertengahan: Cerita, Jam & Kalendar.
+                    </p>
+                    <div class="text-4xl animate-bounce">👇</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex-none bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg p-2 border-2 border-white">
+            <h3 class="text-lg font-bold text-slate-700 mb-1 text-center">🎮 Pilih Aktiviti</h3>
+
+            <div class="grid grid-cols-5 gap-2 mb-2">
+                <button onclick="loadActivity(1)"
+                    class="btn-3d bg-blue-500 text-white font-bold py-2 px-1 rounded-xl text-xs md:text-sm">🌄<br>Cerita</button>
+                <button onclick="loadActivity(2)"
+                    class="btn-3d bg-green-500 text-white font-bold py-2 px-1 rounded-xl text-xs md:text-sm">⏱️<br>Jam</button>
+                <button onclick="loadActivity(3)"
+                    class="btn-3d bg-purple-500 text-white font-bold py-2 px-1 rounded-xl text-xs md:text-sm">🕵️<br>Detektif</button>
+                <button onclick="loadActivity(4)"
+                    class="btn-3d bg-orange-500 text-white font-bold py-2 px-1 rounded-xl text-xs md:text-sm">📅<br>Tarikh</button>
+                <button onclick="loadActivity(5)"
+                    class="btn-3d bg-red-500 text-white font-bold py-2 px-1 rounded-xl text-xs md:text-sm">🗓️<br>Bulan</button>
+            </div>
+
+            <div class="flex justify-center gap-4 border-t-2 border-slate-100 pt-2">
+                <button onclick="clearActivity()"
+                    class="btn-3d bg-slate-400 text-white font-bold py-1 px-4 rounded-full text-base">🏠 Menu</button>
+                <button onclick="nextActivity()"
+                    class="btn-3d bg-indigo-500 text-white font-bold py-1 px-6 rounded-full text-lg">Seterusnya
+                    ➡️</button>
             </div>
         </div>
     </div>
 
-    <div class="bg-white/80 backdrop-blur-sm rounded-3xl shadow-lg p-6 border-2 border-white">
-      <h3 class="text-2xl font-bold text-slate-700 mb-4 text-center">🎮 Pilih Aktiviti</h3>
-      
-      <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 mb-8">
-        <button onclick="loadActivity(1)" class="btn-3d bg-blue-500 text-white font-bold py-4 px-2 rounded-xl text-lg">🌄 Cerita Seharian</button>
-        <button onclick="loadActivity(2)" class="btn-3d bg-green-500 text-white font-bold py-4 px-2 rounded-xl text-lg">⏱️ Jarum Jam</button>
-        <button onclick="loadActivity(3)" class="btn-3d bg-purple-500 text-white font-bold py-4 px-2 rounded-xl text-lg">🕵️ Detektif Hari</button>
-        <button onclick="loadActivity(4)" class="btn-3d bg-orange-500 text-white font-bold py-4 px-2 rounded-xl text-lg">📅 Tulis Tarikh</button>
-        <button onclick="loadActivity(5)" class="btn-3d bg-red-500 text-white font-bold py-4 px-2 rounded-xl text-lg">🗓️ Susun Bulan</button>
-      </div>
+    <script>
+        /* --- STANDARD HELPERS --- */
+        let currentActivity = 0;
+        let ttsEnabled = false;
+        let currentInfo = "Pilih aktiviti untuk bermula!";
+        let draggedElement = null;
 
-      <div class="flex justify-center gap-4 border-t-2 border-slate-100 pt-6">
-        <button onclick="clearActivity()" class="btn-3d bg-slate-400 text-white font-bold py-2 px-6 rounded-full text-lg">🏠 Menu</button>
-        <button onclick="nextActivity()" class="btn-3d bg-indigo-500 text-white font-bold py-2 px-8 rounded-full text-xl">Seterusnya ➡️</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    /* --- STANDARD HELPERS --- */
-    let currentActivity = 0;
-    let ttsEnabled = false;
-    let currentInfo = "Pilih aktiviti untuk bermula!";
-    let draggedElement = null;
-    
-    function speak(text) { 
-        if (!ttsEnabled || !('speechSynthesis' in window)) return; 
-        window.speechSynthesis.cancel(); 
-        const u = new SpeechSynthesisUtterance(text); u.lang = 'ms-MY'; u.rate = 0.95; u.pitch = 1.05; 
-        const ms = window.speechSynthesis.getVoices().find(v => v.lang === 'ms-MY' || v.lang?.startsWith('ms')); 
-        if (ms) u.voice = ms; 
-        window.speechSynthesis.speak(u); 
-    }
-    
-    function setInfo(text) { 
-        currentInfo = text; const infoEl = document.getElementById('info-text'); 
-        infoEl.style.opacity = 0; setTimeout(() => { infoEl.textContent = text; infoEl.style.opacity = 1; }, 200); 
-    }
-    
-    function speakInfo() { 
-        if (!ttsEnabled) { ttsEnabled = true; document.getElementById('speak-btn').classList.add('bg-green-100', 'text-green-600'); } 
-        speak(currentInfo); 
-    }
-
-    function triggerWin() { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); }
-
-    /* --- MODAL --- */
-    function openModal(src) {
-        document.getElementById('modal-img').src = src;
-        document.getElementById('image-modal').classList.remove('hidden');
-    }
-    function closeModal() {
-        document.getElementById('image-modal').classList.add('hidden');
-    }
-
-    /* --- ROUTER --- */
-    function loadActivity(n) {
-      currentActivity = n;
-      const content = document.getElementById('activity-content');
-      content.style.opacity = 0;
-      setTimeout(() => {
-          if (n === 1) setupAct1(content);
-          else if (n === 2) setupAct2(content);
-          else if (n === 3) setupAct3(content);
-          else if (n === 4) setupAct4(content);
-          else if (n === 5) setupAct5(content);
-          content.style.opacity = 1; 
-      }, 200);
-    }
-
-    function clearActivity() {
-        currentActivity = 0;
-        document.getElementById('activity-content').innerHTML = `<div class="py-10 text-center"><div class="text-8xl mb-6 animate-pulse">⌛</div><h2 class="text-5xl font-bold text-emerald-600 mb-4">Masa & Waktu</h2><p class="text-2xl text-slate-500 mb-8 font-semibold">Pilih butang di bawah.</p></div>`;
-        setInfo("Pilih aktiviti di bawah.");
-    }
-    function nextActivity() { let next = currentActivity + 1; if (next > 5) next = 1; loadActivity(next); }
-
-
-    /* =========================================
-       LOGIK AKTIVITI
-       ========================================= */
-
-    /* --- 1. Cerita Seharian (Sequence) --- */
-    let storyState = { nextCorrect: 1 };
-    function setupAct1(content) {
-        setInfo("Susun aktiviti mengikut urutan (1-4).");
-        storyState = { nextCorrect: 1 };
-        
-        const acts = [
-            { id:1, n:"Bangun Pagi", i:"🌅" }, { id:2, n:"Sekolah", i:"🏫" },
-            { id:3, n:"Main Petang", i:"⚽" }, { id:4, n:"Tidur Malam", i:"😴" }
-        ];
-        
-        content.innerHTML = `
-            <div class="w-full max-w-5xl text-center">
-                <h3 class="text-3xl font-bold text-blue-600 mb-6">🌄 Cerita Seharian</h3>
-                
-                <div class="flex justify-center gap-4 mb-10 bg-blue-50 p-6 rounded-2xl border-2 border-blue-200 min-h-[140px]"
-                     id="timeline-zone">
-                     <div class="drop-zone w-32 h-32 rounded-xl flex items-center justify-center text-blue-300 font-bold text-2xl border-dashed border-4 border-blue-200"
-                          ondrop="dropStory(event)" ondragover="allowDrop(event)">1</div>
-                </div>
-
-                <div class="flex flex-wrap justify-center gap-4">
-                    ${acts.sort(()=>Math.random()-0.5).map(a => `
-                        <div draggable="true" ondragstart="dragStart(event)" data-id="${a.id}" 
-                             class="draggable btn-3d bg-white border-slate-300 p-4 rounded-xl w-32 flex flex-col items-center cursor-grab">
-                            <div class="text-4xl mb-2 pointer-events-none">${a.i}</div>
-                            <div class="text-sm font-bold text-slate-600 pointer-events-none">${a.n}</div>
-                        </div>
-                    `).join('')}
-                </div>
-            </div>
-        `;
-    }
-    
-    window.dragStart = function(e) { e.dataTransfer.setData('text', e.target.dataset.id); e.target.style.opacity = '0.5'; }
-    window.allowDrop = function(e) { e.preventDefault(); }
-    
-    window.dropStory = function(e) {
-        e.preventDefault();
-        const id = parseInt(e.dataTransfer.getData('text'));
-        document.querySelectorAll('.draggable').forEach(el => el.style.opacity = '1');
-
-        if(id === storyState.nextCorrect) {
-            const el = document.querySelector(`.draggable[data-id="${id}"]`);
-            const target = e.currentTarget; // Current drop zone
-            
-            // Replace placeholder with item
-            target.innerHTML = '';
-            target.className = "w-32 h-32 rounded-xl bg-blue-100 border-2 border-blue-400 flex flex-col items-center justify-center shadow-md animate-popIn";
-            target.appendChild(el.cloneNode(true));
-            el.remove(); // Remove from source
-            
-            // Remove draggable attrs from clone
-            target.firstElementChild.removeAttribute('draggable');
-            target.firstElementChild.className = "flex flex-col items-center";
-            target.removeAttribute('ondrop'); // Lock zone
-            
-            storyState.nextCorrect++;
-            if(storyState.nextCorrect <= 4) {
-                // Create NEXT placeholder
-                const nextZone = document.createElement('div');
-                nextZone.className = "drop-zone w-32 h-32 rounded-xl flex items-center justify-center text-blue-300 font-bold text-2xl border-dashed border-4 border-blue-200 animate-popIn";
-                nextZone.innerText = storyState.nextCorrect;
-                nextZone.setAttribute('ondrop', 'dropStory(event)');
-                nextZone.setAttribute('ondragover', 'allowDrop(event)');
-                document.getElementById('timeline-zone').appendChild(nextZone);
-                
-                speak("Betul. Seterusnya?");
-            } else {
-                speak("Syabas! Lengkap satu hari."); triggerWin();
-            }
-        } else {
-            speak("Salah urutan. Cuba lagi.");
+        function speak(text) {
+            if (!ttsEnabled || !('speechSynthesis' in window)) return;
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text); u.lang = 'ms-MY'; u.rate = 0.95; u.pitch = 1.05;
+            const ms = window.speechSynthesis.getVoices().find(v => v.lang === 'ms-MY' || v.lang?.startsWith('ms'));
+            if (ms) u.voice = ms;
+            window.speechSynthesis.speak(u);
         }
-    }
 
-    /* --- 2. Jarum Jam --- */
-    function setupAct2(content) {
-        setInfo("Tekan butang untuk ubah waktu jam.");
-        content.innerHTML = `
-            <div class="w-full max-w-4xl text-center">
-                <h3 class="text-3xl font-bold text-green-600 mb-6">⏱️ Jarum Jam</h3>
-                
-                <div id="clock-face" class="mb-8 shadow-xl">
-                    ${[12,1,2,3,4,5,6,7,8,9,10,11].map(n => `<div class="clock-number n${n}">${n}</div>`).join('')}
-                    <div id="hand-hour" class="clock-hand"></div>
-                    <div id="hand-minute" class="clock-hand"></div>
-                    <div id="clock-center"></div>
-                </div>
-                
-                <div id="digital-display" class="text-4xl font-mono font-bold text-slate-700 mb-8 bg-green-50 inline-block px-6 py-2 rounded-lg border border-green-200">
-                    12:00
-                </div>
+        function setInfo(text) {
+            currentInfo = text; const infoEl = document.getElementById('info-text');
+            infoEl.style.opacity = 0; setTimeout(() => { infoEl.textContent = text; infoEl.style.opacity = 1; }, 200);
+        }
 
-                <div class="flex flex-wrap justify-center gap-3">
-                    <button onclick="setTime(3,0)" class="btn-3d bg-green-500 text-white font-bold py-2 px-6 rounded-lg">3:00</button>
-                    <button onclick="setTime(6,30)" class="btn-3d bg-green-500 text-white font-bold py-2 px-6 rounded-lg">6:30</button>
-                    <button onclick="setTime(9,15)" class="btn-3d bg-green-500 text-white font-bold py-2 px-6 rounded-lg">9:15</button>
-                    <button onclick="setTime(11,45)" class="btn-3d bg-green-500 text-white font-bold py-2 px-6 rounded-lg">11:45</button>
+        function speakInfo() {
+            if (!ttsEnabled) { ttsEnabled = true; document.getElementById('speak-btn').classList.add('bg-green-100', 'text-green-600'); }
+            speak(currentInfo);
+        }
+
+        function triggerWin() { confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } }); }
+
+        /* --- MODAL --- */
+        function openModal(src) {
+            document.getElementById('modal-img').src = src;
+            document.getElementById('image-modal').classList.remove('hidden');
+        }
+        function closeModal() {
+            document.getElementById('image-modal').classList.add('hidden');
+        }
+
+        /* --- ROUTER --- */
+        function loadActivity(n) {
+            currentActivity = n;
+            const content = document.getElementById('activity-content');
+            content.style.opacity = 0;
+            setTimeout(() => {
+                if (n === 1) setupAct1(content);
+                else if (n === 2) setupAct2(content);
+                else if (n === 3) setupAct3(content);
+                else if (n === 4) setupAct4(content);
+                else if (n === 5) setupAct5(content);
+                content.style.opacity = 1;
+            }, 200);
+        }
+
+        function clearActivity() {
+            currentActivity = 0;
+            document.getElementById('activity-content').innerHTML = `<div class="py-10 text-center"><div class="text-8xl mb-6 animate-pulse">⌛</div><h2 class="text-5xl font-bold text-emerald-600 mb-4">Masa & Waktu</h2><p class="text-2xl text-slate-500 mb-8 font-semibold">Pilih butang di bawah.</p></div>`;
+            setInfo("Pilih aktiviti di bawah.");
+        }
+        function nextActivity() { let next = currentActivity + 1; if (next > 5) next = 1; loadActivity(next); }
+
+
+        /* =========================================
+           LOGIK AKTIVITI
+           ========================================= */
+
+        /* --- 1. Cerita Seharian (Sequence) --- */
+        let storyState = { nextCorrect: 1 };
+        function setupAct1(content) {
+            setInfo("Susun aktiviti mengikut urutan (1-4).");
+            storyState = { nextCorrect: 1 };
+
+            const acts = [
+                { id: 1, n: "Bangun Pagi", i: "🌅" }, { id: 2, n: "Sekolah", i: "🏫" },
+                { id: 3, n: "Main Petang", i: "⚽" }, { id: 4, n: "Tidur Malam", i: "😴" }
+            ];
+
+            content.innerHTML = `
+            <div class="w-full max-w-5xl text-center flex flex-col h-full overflow-hidden">
+                <h3 class="text-2xl font-bold text-blue-600 mb-4 flex-none">🌄 Cerita Seharian</h3>
+                
+                <div class="flex-1 min-h-0 flex flex-col justify-center items-center">
+                    <div class="flex justify-center gap-4 mb-6 bg-blue-50 p-4 rounded-2xl border-2 border-blue-200 min-h-[120px]"
+                        id="timeline-zone">
+                        <div class="drop-zone w-24 h-24 rounded-xl flex items-center justify-center text-blue-300 font-bold text-2xl border-dashed border-4 border-blue-200"
+                            ondrop="dropStory(event)" ondragover="allowDrop(event)">1</div>
+                    </div>
+
+                    <div class="flex flex-wrap justify-center gap-3">
+                        ${acts.sort(() => Math.random() - 0.5).map(a => `
+                            <div draggable="true" ondragstart="dragStart(event)" data-id="${a.id}" 
+                                class="draggable btn-3d bg-white border-slate-300 p-2 rounded-xl w-24 flex flex-col items-center cursor-grab">
+                                <div class="text-3xl mb-1 pointer-events-none">${a.i}</div>
+                                <div class="text-xs font-bold text-slate-600 pointer-events-none">${a.n}</div>
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             </div>
         `;
-        setTime(12, 0); // Init
-    }
-    
-    window.setTime = function(h, m) {
-        const hDeg = (h % 12) * 30 + (m * 0.5);
-        const mDeg = m * 6;
-        
-        document.getElementById('hand-hour').style.transform = `rotate(${hDeg}deg)`;
-        document.getElementById('hand-minute').style.transform = `rotate(${mDeg}deg)`;
-        
-        const hStr = h === 0 ? 12 : h;
-        const mStr = m.toString().padStart(2, '0');
-        document.getElementById('digital-display').innerText = `${hStr}:${mStr}`;
-        
-        speak(`Pukul ${h} ${m === 0 ? '' : m} minit.`);
-    }
+        }
 
-    /* --- 3. Detektif Hari --- */
-    let detectiveState = { current: null };
-    function setupAct3(content) {
-        setInfo("Pilih hari ini (hijau). Kemudian kira hari.");
-        const days = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
-        detectiveState = { current: null };
-        
-        content.innerHTML = `
-            <div class="w-full max-w-4xl text-center">
-                <h3 class="text-3xl font-bold text-purple-600 mb-6">🕵️ Detektif Hari</h3>
+        window.dragStart = function (e) { e.dataTransfer.setData('text', e.target.dataset.id); e.target.style.opacity = '0.5'; }
+        window.allowDrop = function (e) { e.preventDefault(); }
+
+        window.dropStory = function (e) {
+            e.preventDefault();
+            const id = parseInt(e.dataTransfer.getData('text'));
+            document.querySelectorAll('.draggable').forEach(el => el.style.opacity = '1');
+
+            if (id === storyState.nextCorrect) {
+                const el = document.querySelector(`.draggable[data-id="${id}"]`);
+                const target = e.currentTarget; // Current drop zone
+
+                // Replace placeholder with item
+                target.innerHTML = '';
+                target.className = "w-24 h-24 rounded-xl bg-blue-100 border-2 border-blue-400 flex flex-col items-center justify-center shadow-md animate-popIn";
+                target.appendChild(el.cloneNode(true));
+                el.remove(); // Remove from source
+
+                // Remove draggable attrs from clone
+                target.firstElementChild.removeAttribute('draggable');
+                target.firstElementChild.className = "flex flex-col items-center";
+                target.removeAttribute('ondrop'); // Lock zone
+
+                storyState.nextCorrect++;
+                if (storyState.nextCorrect <= 4) {
+                    // Create NEXT placeholder
+                    const nextZone = document.createElement('div');
+                    nextZone.className = "drop-zone w-24 h-24 rounded-xl flex items-center justify-center text-blue-300 font-bold text-2xl border-dashed border-4 border-blue-200 animate-popIn";
+                    nextZone.innerText = storyState.nextCorrect;
+                    nextZone.setAttribute('ondrop', 'dropStory(event)');
+                    nextZone.setAttribute('ondragover', 'allowDrop(event)');
+                    document.getElementById('timeline-zone').appendChild(nextZone);
+
+                    speak("Betul. Seterusnya?");
+                } else {
+                    speak("Syabas! Lengkap satu hari."); triggerWin();
+                }
+            } else {
+                speak("Salah urutan. Cuba lagi.");
+            }
+        }
+
+        /* --- 2. Jarum Jam --- */
+        function setupAct2(content) {
+            setInfo("Tekan butang untuk ubah waktu jam.");
+            content.innerHTML = `
+            <div class="w-full max-w-4xl text-center flex flex-col h-full justify-center">
+                <h3 class="text-2xl font-bold text-green-600 mb-4 flex-none">⏱️ Jarum Jam</h3>
                 
-                <p class="mb-2 text-slate-500 font-bold">PILIH HARI INI:</p>
-                <div class="flex flex-wrap justify-center gap-2 mb-8">
-                    ${days.map((d, i) => `
-                        <button onclick="selectToday(${i}, this)" class="day-btn btn-3d bg-white text-purple-800 border-purple-200 font-bold py-3 px-4 rounded-xl">
-                            ${d}
-                        </button>
-                    `).join('')}
-                </div>
-                
-                <div id="calc-area" class="opacity-50 pointer-events-none transition-opacity">
-                    <p class="mb-2 text-slate-500 font-bold">KIRA:</p>
-                    <div class="flex justify-center gap-3 mb-6">
-                        <button onclick="calcDay(1)" class="btn-3d bg-purple-500 text-white font-bold py-2 px-4 rounded-lg">Esok (+1)</button>
-                        <button onclick="calcDay(2)" class="btn-3d bg-purple-500 text-white font-bold py-2 px-4 rounded-lg">Lusa (+2)</button>
-                        <button onclick="calcDay(-1)" class="btn-3d bg-purple-500 text-white font-bold py-2 px-4 rounded-lg">Semalam (-1)</button>
+                <div class="flex-1 min-h-0 flex flex-col items-center justify-center">
+                    <div id="clock-face" class="mb-4 shadow-xl flex-none">
+                        ${[12, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11].map(n => `<div class="clock-number n${n}">${n}</div>`).join('')}
+                        <div id="hand-hour" class="clock-hand"></div>
+                        <div id="hand-minute" class="clock-hand"></div>
+                        <div id="clock-center"></div>
                     </div>
                     
-                    <div id="result-day" class="text-4xl font-bold text-purple-900 h-16">---</div>
+                    <div id="digital-display" class="text-3xl font-mono font-bold text-slate-700 mb-6 bg-green-50 inline-block px-4 py-1 rounded-lg border border-green-200 flex-none">
+                        12:00
+                    </div>
+
+                    <div class="flex flex-wrap justify-center gap-2 flex-none">
+                        <button onclick="setTime(3,0)" class="btn-3d bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm">3:00</button>
+                        <button onclick="setTime(6,30)" class="btn-3d bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm">6:30</button>
+                        <button onclick="setTime(9,15)" class="btn-3d bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm">9:15</button>
+                        <button onclick="setTime(11,45)" class="btn-3d bg-green-500 text-white font-bold py-2 px-4 rounded-lg text-sm">11:45</button>
+                    </div>
                 </div>
             </div>
         `;
-    }
-    
-    window.selectToday = function(idx, btn) {
-        document.querySelectorAll('.day-btn').forEach(b => {
-            b.classList.remove('bg-green-400', 'text-white', 'border-green-600');
-            b.classList.add('bg-white', 'text-purple-800');
-        });
-        btn.classList.remove('bg-white', 'text-purple-800');
-        btn.classList.add('bg-green-400', 'text-white', 'border-green-600');
-        
-        detectiveState.current = idx;
-        const area = document.getElementById('calc-area');
-        area.classList.remove('opacity-50', 'pointer-events-none');
-        document.getElementById('result-day').innerText = "---";
-        
-        const days = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
-        speak(`Hari ini ${days[idx]}.`);
-    }
-    
-    window.calcDay = function(offset) {
-        if(detectiveState.current === null) return;
-        const days = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
-        
-        let newIdx = (detectiveState.current + offset) % 7;
-        if(newIdx < 0) newIdx += 7;
-        
-        const res = days[newIdx];
-        document.getElementById('result-day').innerText = res;
-        document.getElementById('result-day').classList.remove('pop-in');
-        void document.getElementById('result-day').offsetWidth; // trigger reflow
-        document.getElementById('result-day').classList.add('pop-in');
-        
-        speak(`Jawapannya ${res}.`);
-    }
+            setTime(12, 0); // Init
+        }
 
-    /* --- 4. Tulis Tarikh --- */
-    function setupAct4(content) {
-        setInfo("Pilih Nama Bulan yang betul.");
-        const months = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
-        const mIdx = Math.floor(Math.random() * 12);
-        const correctMonth = months[mIdx];
-        
-        content.innerHTML = `
-            <div class="w-full max-w-4xl text-center">
-                <h3 class="text-3xl font-bold text-orange-600 mb-6">📅 Tulis Tarikh</h3>
+        window.setTime = function (h, m) {
+            const hDeg = (h % 12) * 30 + (m * 0.5);
+            const mDeg = m * 6;
+
+            document.getElementById('hand-hour').style.transform = `rotate(${hDeg}deg)`;
+            document.getElementById('hand-minute').style.transform = `rotate(${mDeg}deg)`;
+
+            const hStr = h === 0 ? 12 : h;
+            const mStr = m.toString().padStart(2, '0');
+            document.getElementById('digital-display').innerText = `${hStr}:${mStr}`;
+
+            speak(`Pukul ${h} ${m === 0 ? '' : m} minit.`);
+        }
+
+        /* --- 3. Detektif Hari --- */
+        let detectiveState = { current: null };
+        function setupAct3(content) {
+            setInfo("Pilih hari ini (hijau). Kemudian kira hari.");
+            const days = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+            detectiveState = { current: null };
+
+            content.innerHTML = `
+            <div class="w-full max-w-4xl text-center flex flex-col h-full overflow-y-auto">
+                <h3 class="text-2xl font-bold text-purple-600 mb-4 flex-none">🕵️ Detektif Hari</h3>
                 
-                <div class="bg-orange-50 p-8 rounded-3xl border-4 border-orange-200 inline-block mb-8">
-                    <div class="text-slate-500 mb-2 font-bold">TARIKH HARI INI</div>
-                    <div class="text-6xl font-black text-slate-800 flex items-center gap-4">
+                <div class="flex-1 min-h-0 flex flex-col justify-center">
+                    <p class="mb-1 text-slate-500 font-bold text-sm">PILIH HARI INI:</p>
+                    <div class="flex flex-wrap justify-center gap-2 mb-6">
+                        ${days.map((d, i) => `
+                            <button onclick="selectToday(${i}, this)" class="day-btn btn-3d bg-white text-purple-800 border-purple-200 font-bold py-2 px-3 rounded-xl text-sm">
+                                ${d}
+                            </button>
+                        `).join('')}
+                    </div>
+                    
+                    <div id="calc-area" class="opacity-50 pointer-events-none transition-opacity">
+                        <p class="mb-1 text-slate-500 font-bold text-sm">KIRA:</p>
+                        <div class="flex justify-center gap-2 mb-4">
+                            <button onclick="calcDay(1)" class="btn-3d bg-purple-500 text-white font-bold py-2 px-3 rounded-lg text-sm">Esok (+1)</button>
+                            <button onclick="calcDay(2)" class="btn-3d bg-purple-500 text-white font-bold py-2 px-3 rounded-lg text-sm">Lusa (+2)</button>
+                            <button onclick="calcDay(-1)" class="btn-3d bg-purple-500 text-white font-bold py-2 px-3 rounded-lg text-sm">Semalam (-1)</button>
+                        </div>
+                        
+                        <div id="result-day" class="text-3xl font-bold text-purple-900 h-12">---</div>
+                    </div>
+                </div>
+            </div>
+        `;
+        }
+
+        window.selectToday = function (idx, btn) {
+            document.querySelectorAll('.day-btn').forEach(b => {
+                b.classList.remove('bg-green-400', 'text-white', 'border-green-600');
+                b.classList.add('bg-white', 'text-purple-800');
+            });
+            btn.classList.remove('bg-white', 'text-purple-800');
+            btn.classList.add('bg-green-400', 'text-white', 'border-green-600');
+
+            detectiveState.current = idx;
+            const area = document.getElementById('calc-area');
+            area.classList.remove('opacity-50', 'pointer-events-none');
+            document.getElementById('result-day').innerText = "---";
+
+            const days = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+            speak(`Hari ini ${days[idx]}.`);
+        }
+
+        window.calcDay = function (offset) {
+            if (detectiveState.current === null) return;
+            const days = ["Ahad", "Isnin", "Selasa", "Rabu", "Khamis", "Jumaat", "Sabtu"];
+
+            let newIdx = (detectiveState.current + offset) % 7;
+            if (newIdx < 0) newIdx += 7;
+
+            const res = days[newIdx];
+            document.getElementById('result-day').innerText = res;
+            document.getElementById('result-day').classList.remove('pop-in');
+            void document.getElementById('result-day').offsetWidth; // trigger reflow
+            document.getElementById('result-day').classList.add('pop-in');
+
+            speak(`Jawapannya ${res}.`);
+        }
+
+        /* --- 4. Tulis Tarikh --- */
+        function setupAct4(content) {
+            setInfo("Pilih Nama Bulan yang betul.");
+            const months = ["Januari", "Februari", "Mac", "April", "Mei", "Jun", "Julai", "Ogos", "September", "Oktober", "November", "Disember"];
+            const mIdx = Math.floor(Math.random() * 12);
+            const correctMonth = months[mIdx];
+
+            content.innerHTML = `
+            <div class="w-full max-w-4xl text-center flex flex-col h-full justify-center">
+                <h3 class="text-2xl font-bold text-orange-600 mb-4">📅 Tulis Tarikh</h3>
+                
+                <div class="bg-orange-50 p-4 rounded-3xl border-4 border-orange-200 inline-block mb-6 mx-auto w-fit">
+                    <div class="text-slate-500 mb-1 font-bold text-xs">TARIKH HARI INI</div>
+                    <div class="text-4xl font-black text-slate-800 flex items-center gap-2">
                         <span>15</span>
                         <span class="text-orange-500">/</span>
                         <span class="text-orange-600 border-b-4 border-orange-600 px-2">${mIdx + 1}</span>
@@ -420,112 +581,115 @@
                     </div>
                 </div>
                 
-                <div class="grid grid-cols-3 md:grid-cols-4 gap-3">
+                <div class="grid grid-cols-3 md:grid-cols-4 gap-2">
                     ${months.map(m => `
-                        <button onclick="checkMonth('${m}', '${correctMonth}', this)" class="btn-3d bg-white text-slate-600 border-slate-300 font-bold py-3 rounded-xl hover:bg-orange-50">
+                        <button onclick="checkMonth('${m}', '${correctMonth}', this)" class="btn-3d bg-white text-slate-600 border-slate-300 font-bold py-2 rounded-xl hover:bg-orange-50 text-sm">
                             ${m}
                         </button>
                     `).join('')}
                 </div>
             </div>
         `;
-    }
-    window.checkMonth = function(sel, corr, btn) {
-        if(sel === corr) {
-            btn.classList.remove('bg-white', 'text-slate-600');
-            btn.classList.add('bg-green-500', 'text-white', 'border-green-600');
-            speak("Betul!"); triggerWin();
-            setTimeout(() => setupAct4(document.getElementById('activity-content')), 1500);
-        } else {
-            btn.classList.add('bg-red-100', 'shake');
-            setTimeout(()=>btn.classList.remove('bg-red-100', 'shake'), 500);
-            speak("Salah.");
         }
-    }
+        window.checkMonth = function (sel, corr, btn) {
+            if (sel === corr) {
+                btn.classList.remove('bg-white', 'text-slate-600');
+                btn.classList.add('bg-green-500', 'text-white', 'border-green-600');
+                speak("Betul!"); triggerWin();
+                setTimeout(() => setupAct4(document.getElementById('activity-content')), 1500);
+            } else {
+                btn.classList.add('bg-red-100', 'shake');
+                setTimeout(() => btn.classList.remove('bg-red-100', 'shake'), 500);
+                speak("Salah.");
+            }
+        }
 
-    /* --- 5. Susun Bulan (Color Match) --- */
-    function setupAct5(content) {
-        setInfo("Asingkan bulan mengikut bilangan hari (Warna).");
-        
-        const months = [
-            {n:"Jan", d:31, c:"red"}, {n:"Feb", d:28, c:"blue"}, {n:"Apr", d:30, c:"orange"},
-            {n:"Mei", d:31, c:"red"}, {n:"Jun", d:30, c:"orange"}, {n:"Dis", d:31, c:"red"}
-        ]; // Sample set
-        
-        content.innerHTML = `
-            <div class="w-full max-w-5xl text-center">
-                <h3 class="text-3xl font-bold text-red-600 mb-6">🗓️ Susun Bulan</h3>
+        /* --- 5. Susun Bulan (Color Match) --- */
+        function setupAct5(content) {
+            setInfo("Asingkan bulan mengikut bilangan hari (Warna).");
+
+            const months = [
+                { n: "Jan", d: 31, c: "red" }, { n: "Feb", d: 28, c: "blue" }, { n: "Apr", d: 30, c: "orange" },
+                { n: "Mei", d: 31, c: "red" }, { n: "Jun", d: 30, c: "orange" }, { n: "Dis", d: 31, c: "red" }
+            ]; // Sample set
+
+            content.innerHTML = `
+            <div class="w-full max-w-5xl text-center flex flex-col h-full overflow-hidden">
+                <h3 class="text-2xl font-bold text-red-600 mb-4 flex-none">🗓️ Susun Bulan</h3>
                 
-                <div class="flex justify-center gap-6 mb-8">
-                    <div class="drop-zone w-32 h-40 rounded-xl bg-red-50 border-red-300 flex flex-col items-center p-2"
-                         ondrop="dropMonth(event, 'red')" ondragover="allowDrop(event)">
-                         <div class="font-bold text-red-600 mb-auto">31 Hari</div>
-                    </div>
-                    <div class="drop-zone w-32 h-40 rounded-xl bg-orange-50 border-orange-300 flex flex-col items-center p-2"
-                         ondrop="dropMonth(event, 'orange')" ondragover="allowDrop(event)">
-                         <div class="font-bold text-orange-600 mb-auto">30 Hari</div>
-                    </div>
-                    <div class="drop-zone w-32 h-40 rounded-xl bg-blue-50 border-blue-300 flex flex-col items-center p-2"
-                         ondrop="dropMonth(event, 'blue')" ondragover="allowDrop(event)">
-                         <div class="font-bold text-blue-600 mb-auto">Lain</div>
-                    </div>
-                </div>
-
-                <div class="flex flex-wrap justify-center gap-4">
-                    ${months.sort(()=>Math.random()-0.5).map(m => `
-                        <div draggable="true" ondragstart="dragStart(event)" data-color="${m.c}"
-                             class="draggable btn-3d bg-white border-slate-300 text-slate-700 font-bold py-3 px-6 rounded-xl cursor-grab">
-                            ${m.n}
+                <div class="flex-1 min-h-0 flex flex-col">
+                    <div class="flex justify-center gap-4 mb-4 flex-none">
+                        <div class="drop-zone w-24 h-32 rounded-xl bg-red-50 border-red-300 flex flex-col items-center p-2"
+                             ondrop="dropMonth(event, 'red')" ondragover="allowDrop(event)">
+                             <div class="font-bold text-red-600 mb-auto text-sm">31 Hari</div>
                         </div>
-                    `).join('')}
+                        <div class="drop-zone w-24 h-32 rounded-xl bg-orange-50 border-orange-300 flex flex-col items-center p-2"
+                             ondrop="dropMonth(event, 'orange')" ondragover="allowDrop(event)">
+                             <div class="font-bold text-orange-600 mb-auto text-sm">30 Hari</div>
+                        </div>
+                        <div class="drop-zone w-24 h-32 rounded-xl bg-blue-50 border-blue-300 flex flex-col items-center p-2"
+                             ondrop="dropMonth(event, 'blue')" ondragover="allowDrop(event)">
+                             <div class="font-bold text-blue-600 mb-auto text-sm">Lain</div>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-wrap justify-center gap-2 overflow-y-auto pb-4">
+                        ${months.sort(() => Math.random() - 0.5).map(m => `
+                            <div draggable="true" ondragstart="dragStart(event)" data-color="${m.c}"
+                                 class="draggable btn-3d bg-white border-slate-300 text-slate-700 font-bold py-2 px-4 rounded-xl cursor-grab text-sm">
+                                ${m.n}
+                            </div>
+                        `).join('')}
+                    </div>
                 </div>
             </div>
         `;
-    }
-    window.dropMonth = function(e, targetColor) {
-        e.preventDefault();
-        const color = e.dataTransfer.getData('text'); // Actually storing color in 'text' for simplicity logic here? No, need ID or data.
-        // Simplification: Drag Start stores color directly for this specific logic
-    }
-    // Override Drag Start for Act 5
-    const originalDragStart = window.dragStart;
-    window.dragStart = function(e) {
-        if(e.target.dataset.color) {
-            e.dataTransfer.setData('color', e.target.dataset.color);
-            e.target.style.opacity = '0.5';
-            e.target.id = "dragging-el"; // Temp ID
-        } else {
-            originalDragStart(e);
         }
-    }
-    
-    window.dropMonth = function(e, targetColor) {
-        e.preventDefault();
-        const color = e.dataTransfer.getData('color');
-        const el = document.getElementById('dragging-el');
-        
-        if(el) {
-            el.style.opacity = '1';
-            el.id = "";
-            
-            if(color === targetColor) {
-                e.currentTarget.appendChild(el);
-                el.removeAttribute('draggable');
-                el.classList.remove('btn-3d', 'bg-white', 'border-slate-300');
-                // Style match
-                if(color==='red') el.className = "bg-red-500 text-white px-2 py-1 rounded mb-1 w-full text-sm font-bold shadow";
-                if(color==='orange') el.className = "bg-orange-500 text-white px-2 py-1 rounded mb-1 w-full text-sm font-bold shadow";
-                if(color==='blue') el.className = "bg-blue-500 text-white px-2 py-1 rounded mb-1 w-full text-sm font-bold shadow";
-                
-                speak("Betul!");
+        window.dropMonth = function (e, targetColor) {
+            e.preventDefault();
+            const color = e.dataTransfer.getData('text'); // Actually storing color in 'text' for simplicity logic here? No, need ID or data.
+            // Simplification: Drag Start stores color directly for this specific logic
+        }
+        // Override Drag Start for Act 5
+        const originalDragStart = window.dragStart;
+        window.dragStart = function (e) {
+            if (e.target.dataset.color) {
+                e.dataTransfer.setData('color', e.target.dataset.color);
+                e.target.style.opacity = '0.5';
+                e.target.id = "dragging-el"; // Temp ID
             } else {
-                speak("Salah kumpulan.");
-                el.classList.add('shake');
-                setTimeout(()=>el.classList.remove('shake'), 500);
+                originalDragStart(e);
             }
         }
-    }
 
-  </script>
+        window.dropMonth = function (e, targetColor) {
+            e.preventDefault();
+            const color = e.dataTransfer.getData('color');
+            const el = document.getElementById('dragging-el');
+
+            if (el) {
+                el.style.opacity = '1';
+                el.id = "";
+
+                if (color === targetColor) {
+                    e.currentTarget.appendChild(el);
+                    el.removeAttribute('draggable');
+                    el.classList.remove('btn-3d', 'bg-white', 'border-slate-300');
+                    // Style match
+                    if (color === 'red') el.className = "bg-red-500 text-white px-2 py-1 rounded mb-1 w-full text-sm font-bold shadow";
+                    if (color === 'orange') el.className = "bg-orange-500 text-white px-2 py-1 rounded mb-1 w-full text-sm font-bold shadow";
+                    if (color === 'blue') el.className = "bg-blue-500 text-white px-2 py-1 rounded mb-1 w-full text-sm font-bold shadow";
+
+                    speak("Betul!");
+                } else {
+                    speak("Salah kumpulan.");
+                    el.classList.add('shake');
+                    setTimeout(() => el.classList.remove('shake'), 500);
+                }
+            }
+        }
+
+    </script>
 </body>
+
 </html>
